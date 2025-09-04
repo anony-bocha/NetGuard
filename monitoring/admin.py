@@ -1,3 +1,7 @@
 from django.contrib import admin
+from .models import Asset, AttackType, Scan, Alert
 
-# Register your models here.
+admin.site.register(Asset)
+admin.site.register(AttackType)
+admin.site.register(Scan)
+admin.site.register(Alert)
