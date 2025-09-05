@@ -69,12 +69,14 @@ class Scan(models.Model):
 class Alert(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     asset = models.ForeignKey(Asset, on_delete=models.CASCADE, related_name='alerts')
+    scan = models.ForeignKey(Scan, on_delete=models.CASCADE, related_name='alerts', null=True, blank=True)  # ADD THIS
     attack_type = models.ForeignKey(AttackType, on_delete=models.SET_NULL, null=True)
     severity = models.CharField(max_length=10, choices=SEVERITY_CHOICES, default='Medium')
     confidence = models.CharField(max_length=10, choices=CONFIDENCE_CHOICES, default='Medium')
     description = models.TextField(blank=True, null=True)
     timestamp = models.DateTimeField(default=timezone.now)
     resolved = models.BooleanField(default=False)
+
 
     def __str__(self):
         return f"{self.attack_type} on {self.asset} ({self.severity})"
