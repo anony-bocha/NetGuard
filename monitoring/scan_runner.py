@@ -41,19 +41,16 @@ def run_scans():
         # Generate alerts for suspicious services
         for port, info in nmap_result.items():
             if port in SUSPICIOUS_SERVICES:
-                alert_name = SUSPICIOUS_SERVICES[port]["name"]
-                alert_desc = f"{SUSPICIOUS_SERVICES[port]['desc']} on asset {asset}"
-                
                 Alert.objects.create(
                     asset=asset,
-                    scan=scan,
+                    # 🔹 removed "scan" because Alert model has no scan field
                     attack_type=AttackType.objects.get_or_create(
-                        name=alert_name
+                        name=SUSPICIOUS_SERVICES[port]["name"]
                     )[0],
                     severity="High",
-                    confidence="High",  # Set confidence to High
-                    description=alert_desc,
+                    confidence="High",
+                    description=f"{SUSPICIOUS_SERVICES[port]['desc']} (port {port})",
                     timestamp=timezone.now()
                 )
 
-        print(f"Scan completed for {asset.ip_address}")
+        print(f"✅ Scan completed for {asset.ip_address}")
