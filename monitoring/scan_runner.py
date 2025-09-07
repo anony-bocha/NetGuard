@@ -13,44 +13,61 @@ SUSPICIOUS_SERVICES = {
 
 def run_scans():
     assets = Asset.objects.all()
+    
     for asset in assets:
-        # Create a scan record
-        scan = Scan.objects.create(
-            asset=asset,
-            scan_type="Active",
-            start_time=timezone.now(),
-        )
+        try:
+            # Create a scan record
+            scan = Scan.objects.create(
+                asset=asset,
+                scan_type="Active",
+                start_time=timezone.now(),
+            )
 
-        result_summary = ""
+            result_summary = ""
 
-        # Ping check
-        if ping_host(asset.ip_address):
-            result_summary += "Ping: Online\n"
-        else:
-            result_summary += "Ping: Offline\n"
+            # Ping check
+            try:
+                online = ping_host(asset.ip_address)
+                result_summary += f"Ping: {'Online' if online else 'Offline'}\n"
+            except Exception as e:
+                result_summary += f"Ping: Error ({e})\n"
+                print(f"❌ Ping error for {asset.ip_address}: {e}")
 
-        # Nmap scan
-        nmap_result = nmap_scan(asset.ip_address)
-        result_summary += f"Nmap Results: {nmap_result}\n"
+            # Nmap scan
+            try:
+                nmap_result = nmap_scan(asset.ip_address)
+                if not isinstance(nmap_result, dict):
+                    nmap_result = {}
+                result_summary += f"Nmap Results: {nmap_result}\n"
+            except Exception as e:
+                nmap_result = {}
+                result_summary += f"Nmap Results: Error ({e})\n"
+                print(f"❌ Nmap error for {asset.ip_address}: {e}")
 
-        # Save scan results
-        scan.result_summary = result_summary
-        scan.end_time = timezone.now()
-        scan.save()
+            # Save scan results
+            scan.result_summary = result_summary
+            scan.end_time = timezone.now()
+            scan.save()
 
-        # Generate alerts for suspicious services
-        for port, info in nmap_result.items():
-            if port in SUSPICIOUS_SERVICES:
-                Alert.objects.create(
-                    asset=asset,
-                    # 🔹 removed "scan" because Alert model has no scan field
-                    attack_type=AttackType.objects.get_or_create(
-                        name=SUSPICIOUS_SERVICES[port]["name"]
-                    )[0],
-                    severity="High",
-                    confidence="High",
-                    description=f"{SUSPICIOUS_SERVICES[port]['desc']} (port {port})",
-                    timestamp=timezone.now()
-                )
+            # Generate alerts for suspicious services
+            for port, info in nmap_result.items():
+                if port in SUSPICIOUS_SERVICES:
+                    try:
+                        attack_type, _ = AttackType.objects.get_or_create(
+                            name=SUSPICIOUS_SERVICES[port]["name"]
+                        )
+                        Alert.objects.create(
+                            asset=asset,
+                            attack_type=attack_type,
+                            severity="High",
+                            confidence="High",
+                            description=f"{SUSPICIOUS_SERVICES[port]['desc']} (port {port})",
+                            timestamp=timezone.now()
+                        )
+                    except Exception as e:
+                        print(f"❌ Alert creation failed for {asset.ip_address} port {port}: {e}")
 
-        print(f"✅ Scan completed for {asset.ip_address}")
+            print(f"✅ Scan completed for {asset.ip_address}")
+
+        except Exception as e:
+            print(f"❌ Unexpected error during scan for {asset.ip_address}: {e}")
