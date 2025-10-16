@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NetGuard Dashboard</title>
+</head>
+<body>
+    <h1>NetGuard Monitoring Dashboard</h1>
+
+    <h2>Latest Scans</h2>
+    <ul>
+        {% for scan in scans %}
+            <li>{{ scan.asset.ip_address }} - {{ scan.start_time }} - {{ scan.result_summary|linebreaks }}</li>
+        {% empty %}
+            <li>No scans yet.</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Latest Alerts</h2>
+    <ul>
+        {% for alert in alerts %}
+            <li>{{ alert.asset.ip_address }} - {{ alert.attack_type.name }} - {{ alert.severity }} - {{ alert.timestamp }}</li>
+        {% empty %}
+            <li>No alerts yet.</li>
+        {% endfor %}
+    </ul>
+
+    <a href="{% url 'run_scan' %}">Run Scan Now</a>
+</body>
+</html>

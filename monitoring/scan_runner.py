@@ -1,6 +1,15 @@
 from monitoring.models import Asset, Scan, Alert, AttackType
 from monitoring.utils.network_utils import ping_host, nmap_scan
 from django.utils import timezone
+from django.http import HttpResponse
+from .scan_runner import run_scans
+from .tasks import run_scans_task
+
+
+def run_scan_view(request):
+    run_scans_task.delay()
+    return HttpResponse("✅ Scan started in background.")
+
 
 # Define suspicious ports/services for automatic alerts with descriptions
 SUSPICIOUS_SERVICES = {
