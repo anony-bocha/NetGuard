@@ -1,5 +1,18 @@
 from celery import shared_task
 from .scan_runner import run_scans
+from celery import shared_task
+from .scan_runner import run_scans
+
+@shared_task(bind=True)
+def run_scans_task(self):
+    try:
+        results = run_scans()
+        for res in results:
+            print("Scan result:", res)
+        return "Active scans completed successfully!"
+    except Exception as e:
+        print(f"ERROR in run_scans_task: {e}")
+        return f"Active scans failed: {e}"
 
 @shared_task(bind=True)
 def run_active_scans(self):
